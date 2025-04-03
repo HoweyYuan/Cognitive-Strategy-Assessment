@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学习策略量表</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        h3 {
+            color: #2c3e50;
+        }
+        .question {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .options {
+            margin-top: 10px;
+        }
+        label {
+            display: block;
+            margin: 5px 0;
+            cursor: pointer;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .chart-container {
+            margin: 30px 0;
+            width: 100%;
+        }
+        .chart-box {
+            width: 100%;
+            height: 400px;
+            margin-bottom: 40px;
+        }
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+        .scoring-info {
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #eaf2f8;
+            border-radius: 5px;
+        }
+        .progress-container {
+            margin: 20px 0;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            height: 25px;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #4CAF50;
+            border-radius: 5px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        #developer {
+            //position: absolute; /* 绝对定位 */
+            bottom: 20px; /* 底部 */
+            //right: 10px; /* 右侧 */
+            text-align: center;
+            font-size: 16px;
+            color: rgba(0, 0, 0, 0.8); /* 文字颜色 */
+        }
+    </style>
+</head>
+<body>
+    <h1>学习策略量表</h1>
+    <p>您好！下列关于学习策略应用情况的测试题，请根据您的实际情况认真作答，选择最符合的选项，谢谢配合！1=完全不符合，2=不太符合，3=一般符合，4=比较符合，5=完全符合。</p>
+    
+    <div class="progress-container">
+        <div id="progress-bar" class="progress-bar"></div>
+    </div>
+    <p id="progress-text">已完成 0%</p>
+    
+    <div id="questionnaire">
+        <!-- 问题将通过JavaScript动态生成 -->
+    </div>
+    
+    <button id="submit-btn">提交问卷</button>
+    
+    <div id="results" class="results">
+        <h2>您的学习策略评估报告</h2>
+            <div class="scoring-info">
+            <p><strong>报告解读：</strong>得分率越高，表示该策略使用频率越高；请您有改进得分率低于60%的策略，掌握它，并养成好习惯，就能会学习，终身受益。请看具体数据：</p>
+        </div>
+        <div class="chart-container">
+            <h3>一、二级指标得分率</h3>
+            <div class="chart-box">
+                <canvas id="level2Chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <h3>二、三级指标得分率</h3>
+            <h3>1.三级指标折线图</h3>
+            <div class="chart-box">
+                <canvas id="level3Chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <h3>2.三级指标雷达图</h3>
+            <div class="chart-box">
+                <canvas id="radarChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="scoring-info">
+            <h3>三、评分标准说明</h3>
+            <p><strong>1.评分规则：</strong>每个题目1-5分，得分越高表示该策略使用频率越高。</p>
+            <p><strong>2.得分率计算：</strong>得分率 = (实际得分 - 最低可能得分) / (最高可能得分 - 最低可能得分) × 100%</p>
+            <p><strong>3.指标解释：</strong></p>
+            <ul>
+                <li><strong>（1）认知策略：</strong>包括复述、精加工和组织策略，反映学习者对学习材料的直接加工过程。</li>
+                <li><strong>（2）元认知策略：</strong>包括计划、监控和调节策略，反映学习者对学习过程的自我管理和调控能力。</li>
+                <li><strong>（3）资源管理策略：</strong>包括时间管理、学习环境管理、努力管理和寻求帮助策略，反映学习者对学习资源的利用能力。</li>
+            </ul>
+        </div>
+        <div id="developer">开发人：北京中学科技分校  于瑞利，开发工具：DeepSeek</div>
+    </div>
+
+    <script>
+        // 学习策略量表结构（全部正向题）
+        const strategyScale = {
+            level1: "学习策略",
+            level2: [
+                {
+                    name: "认知策略",
+                    level3: [
+                        { name: "复述策略", questions: [
+                            "我会反复阅读学习材料以帮助记忆",
+                            "我会通过背诵关键内容来巩固学习",
+                            "我会用自己的话复述学习内容"
+                        ]},
+                        { name: "精加工策略", questions: [
+                            "我会将新知识与已有知识联系起来",
+                            "我会用例子说明学习内容",
+                            "我会用自己的话解释学习内容"
+                        ]},
+                        { name: "组织策略", questions: [
+                            "我会用图表整理学习内容",
+                            "我会总结学习内容的要点",
+                            "我会将学习内容分类整理"
+                        ]}
+                    ]
+                },
+                {
+                    name: "元认知策略",
+                    level3: [
+                        { name: "计划策略", questions: [
+                            "我会在学习前设定具体目标",
+                            "我会根据学习任务安排学习步骤",
+                            "我会规划学习时间"
+                        ]},
+                        { name: "监控策略", questions: [
+                            "我会检查自己是否理解学习内容",
+                            "我会评估自己的学习进度",
+                            "我会注意自己是否集中注意力学习"
+                        ]},
+                        { name: "调节策略", questions: [
+                            "发现理解困难时我会调整学习方法",
+                            "我会根据学习效果调整学习计划",
+                            "学习效果不佳时我会改变学习策略"
+                        ]}
+                    ]
+                },
+                {
+                    name: "资源管理策略",
+                    level3: [
+                        { name: "时间管理", questions: [
+                            "我会合理安排学习时间",
+                            "我会优先完成重要的学习任务",
+                            "我会按时完成学习计划"
+                        ]},
+                        { name: "学习环境管理", questions: [
+                            "我会选择安静的地方学习",
+                            "我会整理学习环境减少干扰",
+                            "我会创造有利于学习的环境"
+                        ]},
+                        { name: "努力管理", questions: [
+                            "遇到困难时我会坚持学习",
+                            "我会付出额外努力完成学习任务",
+                            "我会激励自己努力学习"
+                        ]},
+                        { name: "寻求帮助", questions: [
+                            "遇到困难时我会向他人请教",
+                            "我会与同学讨论学习问题",
+                            "我会利用网络资源解决学习问题"
+                        ]}
+                    ]
+                }
+            ]
+        };
+
+        // 生成随机顺序的问题
+        function generateRandomQuestions() {
+            let allQuestions = [];
+            let questionId = 0;
+            
+            // 收集所有问题并标记所属指标
+            strategyScale.level2.forEach((l2, l2Index) => {
+                l2.level3.forEach((l3, l3Index) => {
+                    l3.questions.forEach((q, qIndex) => {
+                        allQuestions.push({
+                            text: q,
+                            level2: l2.name,
+                            level2Index: l2Index,
+                            level3: l3.name,
+                            level3Index: l3Index,
+                            id: questionId++
+                        });
+                    });
+                });
+            });
+            
+            // 打乱问题顺序
+            return shuffleArray(allQuestions);
+        }
+
+        // Fisher-Yates洗牌算法
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // 更新进度条
+        function updateProgress() {
+            const total = window.questionOrder.length;
+            const answered = window.questionOrder.filter(q => 
+                document.querySelector(`input[name="q${q.id}"]:checked`)
+            ).length;
+            const progress = (answered / total * 100).toFixed(1);
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            document.getElementById('progress-text').textContent = `已完成 ${progress}%`;
+        }
+
+        // 渲染问卷
+        function renderQuestionnaire() {
+            const container = document.getElementById('questionnaire');
+            const questions = generateRandomQuestions();
+            
+            // 存储问题顺序用于后续计算
+            window.questionOrder = questions;
+            
+            questions.forEach((q, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'question';
+                
+                const questionText = document.createElement('p');
+                questionText.textContent = `${index + 1}. ${q.text}`;
+                questionDiv.appendChild(questionText);
+                
+                const optionsDiv = document.createElement('div');
+                optionsDiv.className = 'options';
+                
+                for (let i = 1; i <= 5; i++) {
+                    const label = document.createElement('label');
+                    const input = document.createElement('input');
+                    input.type = 'radio';
+                    input.name = `q${q.id}`;
+                    input.value = i;
+                    input.addEventListener('change', updateProgress);
+                    
+                    label.appendChild(input);
+                    label.appendChild(document.createTextNode(`${i}. ${i===1?'完全不符合':i===2?'不太符合':i===3?'一般符合':i===4?'比较符合':'完全符合'}`));
+                    optionsDiv.appendChild(label);
+                }
+                
+                questionDiv.appendChild(optionsDiv);
+                container.appendChild(questionDiv);
+            });
+            
+            updateProgress();
+        }
+
+        // 计算得分
+        function calculateScores() {
+            const questions = window.questionOrder;
+            const answers = {};
+            
+            // 收集答案
+            questions.forEach(q => {
+                const selectedOption = document.querySelector(`input[name="q${q.id}"]:checked`);
+                answers[q.id] = selectedOption ? parseInt(selectedOption.value) : null;
+            });
+            
+            // 计算三级指标得分
+            const level3Scores = {};
+            strategyScale.level2.forEach(l2 => {
+                l2.level3.forEach(l3 => {
+                    level3Scores[l3.name] = { sum: 0, count: 0, max: 0, min: 0 };
+                });
+            });
+            
+            // 计算二级指标得分
+            const level2Scores = {};
+            strategyScale.level2.forEach(l2 => {
+                level2Scores[l2.name] = { sum: 0, count: 0, max: 0, min: 0 };
+            });
+            
+            questions.forEach(q => {
+                if (answers[q.id] !== null) {
+                    const score = answers[q.id];
+                    const max = 5;
+                    const min = 1;
+                    
+                    // 三级指标
+                    level3Scores[q.level3].sum += score;
+                    level3Scores[q.level3].count++;
+                    level3Scores[q.level3].max += max;
+                    level3Scores[q.level3].min += min;
+                    
+                    // 二级指标
+                    level2Scores[q.level2].sum += score;
+                    level2Scores[q.level2].count++;
+                    level2Scores[q.level2].max += max;
+                    level2Scores[q.level2].min += min;
+                }
+            });
+            
+            // 计算得分率
+            const level3Results = {};
+            Object.keys(level3Scores).forEach(key => {
+                const s = level3Scores[key];
+                level3Results[key] = s.count > 0 ? 
+                    ((s.sum - s.min) / (s.max - s.min) * 100).toFixed(1) : 0;
+            });
+            
+            const level2Results = {};
+            Object.keys(level2Scores).forEach(key => {
+                const s = level2Scores[key];
+                level2Results[key] = s.count > 0 ? 
+                    ((s.sum - s.min) / (s.max - s.min) * 100).toFixed(1) : 0;
+            });
+            
+            return {
+                level2: level2Results,
+                level3: level3Results
+            };
+        }
+
+        // 渲染图表
+        function renderCharts(results) {
+            // 二级指标柱状图
+            const level2Ctx = document.getElementById('level2Chart').getContext('2d');
+            new Chart(level2Ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(results.level2),
+                    datasets: [{
+                        label: '得分率(%)',
+                        data: Object.values(results.level2),
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(75, 192, 192, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(75, 192, 192, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: '得分率(%)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 三级指标折线图
+            const level3Ctx = document.getElementById('level3Chart').getContext('2d');
+            new Chart(level3Ctx, {
+                type: 'line',
+                data: {
+                    labels: Object.keys(results.level3),
+                    datasets: [{
+                        label: '得分率(%)',
+                        data: Object.values(results.level3),
+                        fill: false,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1,
+                        pointBackgroundColor: 'rgb(75, 192, 192)',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: '得分率(%)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 三级指标雷达图
+            const radarCtx = document.getElementById('radarChart').getContext('2d');
+            new Chart(radarCtx, {
+                type: 'radar',
+                data: {
+                    labels: Object.keys(results.level3),
+                    datasets: [{
+                        label: '得分率(%)',
+                        data: Object.values(results.level3),
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: true
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        // 初始化问卷
+        document.addEventListener('DOMContentLoaded', () => {
+            renderQuestionnaire();
+            
+            // 提交按钮事件
+            document.getElementById('submit-btn').addEventListener('click', () => {
+                // 检查是否所有问题都已回答
+                const unanswered = window.questionOrder.filter(q => {
+                    return !document.querySelector(`input[name="q${q.id}"]:checked`);
+                });
+                
+                if (unanswered.length > 0) {
+                    alert(`请回答所有问题，还有${unanswered.length}题未回答。`);
+                    return;
+                }
+                
+                // 计算得分
+                const results = calculateScores();
+                
+                // 显示结果
+                document.getElementById('results').style.display = 'block';
+                
+                // 渲染图表
+                renderCharts(results);
+                
+                // 滚动到结果部分
+                document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>
