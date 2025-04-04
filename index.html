@@ -6,6 +6,13 @@
     <title>学习策略量表</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        #submission-counter {
+            text-align: center;
+            font-size: 16px;
+            color: #2c3e50;
+            margin: 10px 0;
+            font-weight: bold;
+        }
         body {
             font-family: 'Microsoft YaHei', sans-serif;
             line-height: 1.6;
@@ -93,6 +100,7 @@
 </head>
 <body>
     <h1>学习策略量表</h1>
+    <div id="submission-counter">问卷已提交次数：<span id="submission-count">0</span></div>
     <p>您好！下列关于学习策略应用情况的测试题，请根据您的实际情况认真作答，选择最符合的选项，谢谢配合！1=完全不符合，2=不太符合，3=一般符合，4=比较符合，5=完全符合。</p>
     
     <div class="progress-container">
@@ -148,6 +156,32 @@
     </div>
 
     <script>
+        let submissionCount = 0;
+
+        // 修改后的提交按钮点击事件处理
+        document.addEventListener('DOMContentLoaded', () => {
+            renderQuestionnaire();
+            
+            document.getElementById('submit-btn').addEventListener('click', () => {
+                const unanswered = window.questionOrder.filter(q => {
+                    return !document.querySelector(`input[name="q${q.id}"]:checked`);
+                });
+                
+                if (unanswered.length > 0) {
+                    alert(`请回答所有问题，还有${unanswered.length}题未回答。`);
+                    return;
+                }
+                
+                // 提交时增加计数器并更新显示
+                submissionCount++;
+                document.getElementById('submission-count').textContent = submissionCount;
+                
+                const results = calculateScores();
+                document.getElementById('results').style.display = 'block';
+                renderCharts(results);
+                document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+            });
+        });
         // 学习策略量表结构（全部正向题）
         const strategyScale = {
             level1: "学习策略",
